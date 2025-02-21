@@ -1,101 +1,279 @@
-import Image from "next/image";
+"use client";
+
+import { useState, useEffect } from "react";
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../../convex/_generated/api";
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [newTodoText, setNewTodoText] = useState("");
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [editingTodo, setEditingTodo] = useState<{ id: string; text: string } | null>(null);
+  const [deletingTodoId, setDeletingTodoId] = useState<string | null>(null);
+  const todos = useQuery(api.todos.list);
+  const addTodo = useMutation(api.todos.add);
+  const toggleTodo = useMutation(api.todos.toggle);
+  const deleteTodo = useMutation(api.todos.remove);
+  const editTodo = useMutation(api.todos.edit);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  // Theme toggle logic
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("theme");
+    if (savedTheme === "dark") {
+      setIsDarkMode(true);
+      document.documentElement.classList.add("dark");
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    setIsDarkMode((prev) => {
+      const newMode = !prev;
+      if (newMode) {
+        document.documentElement.classList.add("dark");
+        localStorage.setItem("theme", "dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+        localStorage.setItem("theme", "light");
+      }
+      return newMode;
+    });
+  };
+
+  const handleAddTodo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newTodoText.trim() === "") return;
+    await addTodo({ text: newTodoText });
+    setNewTodoText("");
+  };
+
+  const handleEditTodo = (todo: { _id: string; text: string }) => {
+    setEditingTodo({ id: todo._id, text: todo.text });
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingTodo || editingTodo.text.trim() === "") return;
+    await editTodo({ id: editingTodo.id, text: editingTodo.text });
+    setEditingTodo(null);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingTodo(null);
+  };
+
+  const handleDeleteTodo = (id: string) => {
+    setDeletingTodoId(id); // Start confirmation
+  };
+
+  const confirmDelete = async () => {
+    if (deletingTodoId) {
+      await deleteTodo({ id: deletingTodoId });
+      setDeletingTodoId(null); // Reset after deletion
+    }
+  };
+
+  const cancelDelete = () => {
+    setDeletingTodoId(null); // Cancel confirmation
+  };
+
+  if (todos === undefined) {
+    return (
+      <main className="p-6 min-h-screen bg-gradient-to-br from-gray-100 to-blue-50 dark:from-gray-900 dark:to-indigo-950 flex items-center justify-center relative overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="particle particle-1 bg-blue-300 dark:bg-indigo-400 opacity-20 rounded-full absolute animate-float" />
+          <div className="particle particle-2 bg-indigo-300 dark:bg-blue-400 opacity-20 rounded-full absolute animate-float-delayed" />
+          <div className="particle particle-3 bg-blue-200 dark:bg-indigo-300 opacity-20 rounded-full absolute animate-float" />
+          <div className="particle particle-4 bg-indigo-200 dark:bg-blue-300 opacity-20 rounded-full absolute animate-float-delayed" />
+        </div>
+        <div className="flex justify-center items-center h-32">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-blue-500 dark:border-indigo-400"></div>
         </div>
       </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
+    );
+  }
+
+  return (
+    <main className="p-6 min-h-screen bg-gradient-to-br from-gray-100 to-blue-50 dark:from-gray-900 dark:to-indigo-950 flex items-center justify-center relative overflow-hidden">
+      {/* Animated Particles */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="particle particle-1 bg-blue-300 dark:bg-indigo-400 opacity-20 rounded-full absolute animate-float" />
+        <div className="particle particle-2 bg-indigo-300 dark:bg-blue-400 opacity-20 rounded-full absolute animate-float-delayed" />
+        <div className="particle particle-3 bg-blue-200 dark:bg-indigo-300 opacity-20 rounded-full absolute animate-float" />
+        <div className="particle particle-4 bg-indigo-200 dark:bg-blue-300 opacity-20 rounded-full absolute animate-float-delayed" />
+      </div>
+
+      {/* Card */}
+      <div className="max-w-lg w-full bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 transition-all duration-300 hover:shadow-xl relative z-10">
+        {/* Header with Toggle */}
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-extrabold text-gray-800 dark:text-gray-100 tracking-tight transition-all duration-300 hover:shadow">
+            Tasks
+          </h1>
+          <button
+            onClick={toggleTheme}
+            className="p-2 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-200"
+          >
+            {isDarkMode ? "☀️" : "🌙"}
+          </button>
+        </div>
+
+        {/* Form */}
+        <form onSubmit={handleAddTodo} className="mb-6 flex gap-3">
+          <input
+            value={newTodoText}
+            onChange={(e) => setNewTodoText(e.target.value)}
+            placeholder="Add a new task..."
+            className="flex-1 p-3 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 dark:focus:ring-indigo-500 focus:border-transparent transition-all duration-200 text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-gray-900"
           />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+          <button
+            type="submit"
+            className="bg-gradient-to-r from-blue-500 to-indigo-600 dark:from-indigo-500 dark:to-blue-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md hover:from-blue-600 hover:to-indigo-700 dark:hover:from-indigo-600 dark:hover:to-blue-700 transform hover:scale-105 transition-all duration-200"
+          >
+            Add
+          </button>
+        </form>
+
+        {/* Todo List */}
+        {todos.length === 0 ? (
+          <div className="text-center text-gray-500 dark:text-gray-400 py-6">
+            <p>No tasks yet. Add one to get started!</p>
+          </div>
+        ) : (
+          <ul className="space-y-3">
+            {todos.map((todo) => (
+              <li
+                key={todo._id}
+                className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg shadow-sm hover:bg-gray-100 dark:hover:bg-gray-600 transition-all duration-200"
+              >
+                {editingTodo && editingTodo.id === todo._id ? (
+                  <form onSubmit={handleSaveEdit} className="flex-1 flex gap-2">
+                    <input
+                      value={editingTodo.text}
+                      onChange={(e) =>
+                        setEditingTodo({ ...editingTodo, text: e.target.value })
+                      }
+                      className="flex-1 p-2 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 dark:focus:ring-indigo-500 focus:border-transparent transition-all duration-200 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-900"
+                    />
+                    <button
+                      type="submit"
+                      className="bg-gradient-to-r from-green-500 to-teal-600 text-white font-semibold py-1 px-3 rounded-lg shadow-md hover:from-green-600 hover:to-teal-700 transform hover:scale-105 transition-all duration-200"
+                    >
+                      Save
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleCancelEdit}
+                      className="text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 font-medium py-1 px-3 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-200"
+                    >
+                      Cancel
+                    </button>
+                  </form>
+                ) : (
+                  <>
+                    <input
+                      type="checkbox"
+                      checked={todo.completed}
+                      onChange={() => toggleTodo({ id: todo._id })}
+                      className="h-5 w-5 text-blue-500 dark:text-indigo-400 rounded focus:ring-blue-400 dark:focus:ring-indigo-500 cursor-pointer"
+                    />
+                    <span
+                      className={`flex-1 text-gray-700 dark:text-gray-200 ${
+                        todo.completed ? "line-through text-gray-400 dark:text-gray-500" : ""
+                      }`}
+                    >
+                      {todo.text}
+                    </span>
+                    <button
+                      onClick={() => handleEditTodo(todo)}
+                      className="text-yellow-500 dark:text-yellow-400 hover:text-yellow-600 dark:hover:text-yellow-300 p-1 rounded-full bg-yellow-50 dark:bg-yellow-900/50 hover:bg-yellow-100 dark:hover:bg-yellow-800/50 transition-all duration-200"
+                      title="Edit"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                        />
+                      </svg>
+                    </button>
+                    {deletingTodoId === todo._id ? (
+                      <div className="flex gap-2">
+                        <button
+                          onClick={confirmDelete}
+                          className="text-green-500 dark:text-green-400 hover:text-green-600 dark:hover:text-green-300 p-1 rounded-full bg-green-50 dark:bg-green-900/50 hover:bg-green-100 dark:hover:bg-green-800/50 transition-all duration-200"
+                          title="Confirm Delete"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-5 w-5"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M5 13l4 4L19 7"
+                            />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={cancelDelete}
+                          className="text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-200"
+                          title="Cancel"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-5 w-5"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M6 18L18 6M6 6l12 12"
+                            />
+                          </svg>
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => handleDeleteTodo(todo._id)}
+                        className="text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 p-1 rounded-full bg-red-50 dark:bg-red-900/50 hover:bg-red-100 dark:hover:bg-red-800/50 transition-all duration-200"
+                        title="Delete"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-5 w-5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-4h4M9 7h6"
+                          />
+                        </svg>
+                      </button>
+                    )}
+                  </>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </main>
   );
 }
