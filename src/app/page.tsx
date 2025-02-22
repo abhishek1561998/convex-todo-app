@@ -3,12 +3,19 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
+import { Id } from "../../convex/_generated/dataModel"; // Import Id type
+
+// Define the Todo interface
+interface Todo {
+  id: Id<"todos">;
+  text: string;
+}
 
 export default function Home() {
   const [newTodoText, setNewTodoText] = useState("");
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const [editingTodo, setEditingTodo] = useState<{ id: string; text: string } | null>(null);
-  const [deletingTodoId, setDeletingTodoId] = useState<string | null>(null);
+  const [editingTodo, setEditingTodo] = useState<Todo | null>(null); // Use Todo interface
+  const [deletingTodoId, setDeletingTodoId] = useState<Id<"todos"> | null>(null); // Use Id<"todos">
   const todos = useQuery(api.todos.list);
   const addTodo = useMutation(api.todos.add);
   const toggleTodo = useMutation(api.todos.toggle);
@@ -45,8 +52,8 @@ export default function Home() {
     setNewTodoText("");
   };
 
-  const handleEditTodo = (todo: { _id: string; text: string }) => {
-    setEditingTodo({ id: todo._id, text: todo.text });
+  const handleEditTodo = (todo: { _id: Id<"todos">; text: string }) => {
+    setEditingTodo({ id: todo._id, text: todo.text }); // Map _id to id
   };
 
   const handleSaveEdit = async (e: React.FormEvent) => {
@@ -60,7 +67,7 @@ export default function Home() {
     setEditingTodo(null);
   };
 
-  const handleDeleteTodo = (id: string) => {
+  const handleDeleteTodo = (id: Id<"todos">) => {
     setDeletingTodoId(id); // Start confirmation
   };
 
@@ -254,26 +261,26 @@ export default function Home() {
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
                           className="h-5 w-5"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-4h4M9 7h6"
-                          />
-                        </svg>
-                      </button>
-                    )}
-                  </>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-    </main>
-  );
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-4h4M9 7h6"
+                        />
+                      </svg>
+                    </button>
+                  )}
+                </>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  </main>
+);
 }
